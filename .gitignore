@@ -1,0 +1,43 @@
+# Virtual Environment
+venv/
+env/
+.venv/
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+*.egg-info/
+.pytest_cache/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Environment Variables
+.env
+.env.local
+.env.*.local
+
+# Model files (대용량 AI 모델)
+*.pt
+*.pth
+*.weights
+*.onnx
+
+# Logs
+*.log
+logs/
+
+# Datasets (큰 데이터셋은 git에 올리지 않음)
+datasets/
+data/raw/
