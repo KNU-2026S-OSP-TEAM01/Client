@@ -136,8 +136,11 @@ def save_samples(samples, split_name):
 
 
 def write_dataset_yaml():
-    """YOLO 학습용 dataset.yaml 파일을 만든다."""
-    yaml_content = """path: ../data/processed
+    """YOLO 학습용 dataset.yaml 파일을 만든다.
+    YOLO는 어디서 실행되든 데이터를 찾을 수 있어야 하므로 절대 경로를 사용한다.
+    """
+    abs_path = os.path.abspath(OUTPUT_DIR).replace("\\", "/")
+    yaml_content = f"""path: {abs_path}
 train: train/images
 val: val/images
 
@@ -150,7 +153,6 @@ nc: 1
     with open(yaml_path, "w", encoding="utf-8") as f:
         f.write(yaml_content)
     print(f"  dataset.yaml 생성: {yaml_path}")
-
 
 def find_all_json_files(root_dir):
     """root_dir 아래의 모든 .json 파일 경로를 리스트로 반환"""
