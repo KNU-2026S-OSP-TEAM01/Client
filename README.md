@@ -117,6 +117,32 @@ python scripts/predict_yolo.py
 - 결과 이미지를 `runs/predict/` 폴더에 저장
 - 검출된 번호판에 초록색 박스 + 신뢰도 표시
 
+## 번호판 인식 통합 (검출 + OCR)
+
+학습된 YOLO 모델과 EasyOCR을 결합하여 실제 번호판 문자열을 추출한다.
+
+### 1. AI Hub 검증 이미지 추론
+
+```bash
+python scripts/predict_ocr.py
+```
+
+- 검증셋(val) 이미지 10장에서 검출 + OCR 동시 진행
+- 결과 이미지를 `runs/predict_ocr/`에 저장
+- ⚠️ AI Hub 데이터는 번호판이 블러 처리되어 있어 OCR 인식률 0%가 정상
+  - 검출(YOLO)은 정상 작동 (mAP@50: 0.995)
+  - OCR 검증은 실제 선명한 번호판 사진으로 진행 필요
+
+### 2. EasyOCR 단독 검증 (실제 번호판)
+
+```bash
+python scripts/test_ocr_real.py
+```
+
+- `data/test_real/` 폴더의 실제 번호판 사진으로 OCR 단독 동작 확인
+- 한국 번호판 패턴 (`숫자2~3자리 + 한글1자 + 숫자4자리`) 검증
+- 자체 테스트 결과: 3/3 인식 성공 (구형 자가용 형식)
+
 ## 테스트 실행
 
 각 모듈의 단위 테스트를 실행한다.
@@ -136,10 +162,12 @@ pytest tests/test_convert.py -v
 # YOLO 번호판 검출기 (models/best.pt 필요, 없으면 자동 skip)
 pytest tests/test_detector.py -v
 
+# OCR 정규식 + 텍스트 정리 함수
+pytest tests/test_ocr.py -v
+
 # 웹캠 동작 확인 (수동 종료 필요: Q 또는 ESC)
 python tests/test_webcam.py
 ```
-
 ## 프로젝트 구조
 
 ```
