@@ -1,29 +1,35 @@
-# OpenPark Client 설정 파일 예시
-# 이 파일을 client.yaml로 복사한 후 실제 값을 채워서 사용하세요.
-# (client.yaml은 .gitignore에 등록되어 있어 깃에 올라가지 않음)
+# ============================================
+# OpenPark Client 설정 파일 (예시)
+# ============================================
+# 사용법:
+#   1. 이 파일을 client.yaml로 복사
+#   2. 환경에 맞게 값 수정
+#   3. main.py 실행 시 이 설정을 자동으로 읽음
+#
+# 주의: client.yaml은 api_key를 포함하므로 git에 커밋되지 않음
+#       (.gitignore에 등록됨)
+# ============================================
 
-# Parking Lot Server 정보
+# Parking Lot Server 통신 설정
 server:
-  # 서버 주소 (Private 모드면 사설 IP, Public 모드면 공용 도메인)
-  url: "http://localhost:8000"
-
-  # 주차장별 API 키 (서버 관리자에게 발급받음)
-  api_key: "YOUR_API_KEY_HERE"
+  url: "https://parking-server.example.com"   # 주차장 서버 주소
+  api_key: "your-api-key-here"                # 주차장별로 발급된 API 키
+  timeout_seconds: 5                          # 요청 타임아웃 (초)
 
 # 카메라 설정
 camera:
-  # 카메라 장치 번호 (0이 기본 웹캠)
-  device_index: 0
+  device_id: 0   # PC 웹캠은 보통 0, 라즈베리파이 외장 카메라는 1 또는 2
 
 # YOLO 모델 설정
 model:
-  # 모델 파일 경로
-  path: "models/plate_yolo.pt"
+  path: "models/best.pt"   # 학습된 모델 가중치 파일 경로
+  conf_threshold: 0.5      # 검출 신뢰도 임계값 (0~1)
 
-  # 검출 신뢰도 임계값 (이 값 이하는 무시)
-  confidence_threshold: 0.5
+# OCR 설정
+ocr:
+  use_gpu: true            # GPU 사용 여부 (라즈베리파이는 false)
+  min_confidence: 0.5      # OCR 최소 신뢰도
 
-# 중복 인식 방지 설정
+# 중복 인식 방지
 deduplicator:
-  # 같은 번호판 재인식 대기 시간(초)
-  cooldown_seconds: 30
+  cooldown_seconds: 30     # 같은 번호판 재인식 차단 시간 (초)

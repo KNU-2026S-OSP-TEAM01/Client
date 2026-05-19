@@ -1,22 +1,115 @@
 """
-설정 파일을 읽어들이는 모듈.
-config/client.yaml에서 api_key, 서버 주소 등을 불러온다.
+설정 파일을 읽어서 ClientConfig 객체로 반환하는 모듈.
+환경별로 달라지는 값(api_key, server_url, 카메라 ID 등)을
+YAML 파일로 분리하여 관리한다.
 """
+from dataclasses import dataclass
+
 import yaml
 
 
-def load_config(path: str = "config/client.yaml") -> dict:
+@dataclass
+class ServerConfig:
+    """Parking Lot Server 설정"""
+    url: str
+    api_key: str
+    timeout_seconds: int = 5
+
+
+@dataclass
+class CameraConfig:
+    """카메라 설정"""
+    device_id: int = 0
+
+
+@dataclass
+class ModelConfig:
+    """YOLO 모델 설정"""
+    path: str
+    conf_threshold: float = 0.5
+
+
+@dataclass
+class OCRConfig:
+    """OCR 설정"""
+    use_gpu: bool = True
+    min_confidence: float = 0.5
+
+
+@dataclass
+class DeduplicatorConfig:
+    """중복 인식 방지 설정"""
+    cooldown_seconds: int = 30
+
+
+@dataclass
+class ClientConfig:
+    """전체 Client 설정"""
+    server: ServerConfig
+    camera: CameraConfig
+    model: ModelConfig
+    ocr: OCRConfig
+    deduplicator: DeduplicatorConfig
+
+
+def load_config(config_path):
     """
-    YAML 설정 파일을 읽어서 딕셔너리로 반환한다.
+    YAML 설정 파일을 읽어서 ClientConfig 객체로 반환한다.
 
     Args:
-        path: 설정 파일 경로
+        config_path: 설정 파일 경로 (예: 'config/client.yaml')
 
     Returns:
-        설정 내용 딕셔너리
+        ClientConfig 객체
+
+    Raises:
+        FileNotFoundError: 설정 파일이 없을 때
+        ValueError: 필수 키가 누락됐을 때
     """
-    # TODO: 다음 sub-issue에서 구현
-    # 1. yaml 파일 열기
-    # 2. yaml.safe_load로 파싱
-    # 3. 필수 키 검증 (api_key, server_url 등)
-    raise NotImplementedError("다음 sub-issue에서 구현")
+    # 파일 읽기
+    with open(config_path, "r", encoding="utf-8") as f:
+        data = yaml.safe_load(f)
+
+    if data is None:
+        raise ValueError(f"설정 파일이 비어있습니다: {config_path}")
+
+    # 필수 섹션 검증
+    required_sections = ["server", "camera", "model", "ocr", "deduplicator"]
+    for section in required_sections:
+        if section not in data:
+            raise ValueError(f"필수 설정 섹션이 없습니다: '{section}'")
+
+    # server 검증
+    server_data = data["server"]
+    if "url" not in server_data:
+        raise ValueError("server.url 설정이 없습니다")
+    if "api_key" not in server_data:
+        raise ValueError("server.api_key 설정이 없습니다")
+
+    # model 검증
+    model_data = data["model"]
+    if "path" not in model_data:
+        raise ValueError("model.path 설정이 없습니다")
+
+    # 객체 생성
+    return ClientConfig(
+        server=ServerConfig(
+            url=server_data["url"],
+            api_key=server_data["api_key"],
+            timeout_seconds=server_data.get("timeout_seconds", 5),
+        ),
+        camera=CameraConfig(
+            device_id=data["camera"].get("device_id", 0),
+        ),
+        model=ModelConfig(
+            path=model_data["path"],
+            conf_threshold=model_data.get("conf_threshold", 0.5),
+        ),
+        ocr=OCRConfig(
+            use_gpu=data["ocr"].get("use_gpu", True),
+            min_confidence=data["ocr"].get("min_confidence", 0.5),
+        ),
+        deduplicator=DeduplicatorConfig(
+            cooldown_seconds=data["deduplicator"].get("cooldown_seconds", 30),
+        ),
+    )
