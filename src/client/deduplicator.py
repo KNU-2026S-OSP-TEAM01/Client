@@ -1,34 +1,55 @@
 """
-같은 번호판이 연속으로 인식되는 걸 방지하는 모듈.
-재전송하면 서버에서 입출차가 반전되므로 매우 중요.
+같은 번호판이 짧은 시간 안에 여러 번 인식되어도
+서버에는 한 번만 송신되도록 중복을 거른다.
+
+박수겸 백엔드 요구사항: "같은 번호판 재전송 금지"
 """
 from datetime import datetime, timedelta
 
 
 class Deduplicator:
-    """중복 인식 방지기"""
+    """번호판 재전송을 차단하는 클래스."""
 
-    def __init__(self, cooldown_seconds: int = 30):
+    def __init__(self, cooldown_seconds=30):
         """
         Args:
-            cooldown_seconds: 같은 번호판을 다시 받기까지의 대기 시간(초)
+            cooldown_seconds: 같은 번호판을 다시 보낼 수 있는 최소 간격(초)
         """
-        self.cooldown = timedelta(seconds=cooldown_seconds)
-        self.last_seen = {}  # {번호판: 마지막 인식 시각}
+        self.cooldown_seconds = cooldown_seconds
+        # {번호판 문자열: 마지막으로 송신한 datetime}
+        self.last_sent = {}
 
-    def should_send(self, plate_number: str, now: datetime) -> bool:
+    def should_send(self, plate_number, now=None):
         """
-        지금 이 번호판을 서버로 보낼지 판단한다.
+        이 번호판을 지금 보내야 하는지 판단한다.
 
         Args:
-            plate_number: 인식된 번호판
-            now: 현재 시각
+            plate_number: 번호판 문자열 (예: "12가3456")
+            now: 현재 시각 (None이면 datetime.now() 사용)
+                 — 테스트에서 시각을 주입할 수 있도록 인자로 받음
 
         Returns:
-            True면 보냄, False면 무시
+            True: 보내야 함 (처음이거나 cooldown 지남)
+            False: 보내지 말 것 (최근에 보냄)
         """
-        # TODO: 다음 sub-issue에서 구현
-        # 1. last_seen에 번호판이 없거나 cooldown 지났으면 → True
-        # 2. 아니면 → False
-        # 3. True 반환할 때 last_seen 업데이트
-        raise NotImplementedError("다음 sub-issue에서 구현")
+        if now is None:
+            now = datetime.now()
+
+        # 처음 본 번호판이면 무조건 송신
+        if plate_number not in self.last_sent:
+            self.last_sent[plate_number] = now
+            return True
+
+        # 마지막 송신 시각과 비교
+        elapsed = now - self.last_sent[plate_number]
+        if elapsed >= timedelta(seconds=self.cooldown_seconds):
+            # cooldown 지났음 → 송신 + 시각 갱신
+            self.last_sent[plate_number] = now
+            return True
+
+        # cooldown 안 지났음 → 송신 안 함
+        return False
+
+    def reset(self):
+        """내부 캐시를 비운다 (주로 테스트용)."""
+        self.last_sent = {}

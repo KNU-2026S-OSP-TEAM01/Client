@@ -187,6 +187,9 @@ pytest tests/test_ocr.py -v
 # 설정 파일 로더
 pytest tests/test_config.py -v
 
+# 중복 인식 방지 (Deduplicator)
+pytest tests/test_deduplicator.py -v
+
 # 웹캠 동작 확인 (수동 종료 필요: Q 또는 ESC)
 python tests/test_webcam.py
 ```
