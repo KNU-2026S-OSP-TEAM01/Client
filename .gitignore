@@ -37,6 +37,8 @@ desktop.ini
 # Logs
 *.log
 logs/
+# YOLO 학습 결과 폴더
+runs/
 
 # 데이터셋 (README만 추적, 나머지는 무시)
 data/*

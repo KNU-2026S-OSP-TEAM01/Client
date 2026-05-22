@@ -90,6 +90,33 @@ python scripts/convert_aihub_to_yolo.py
 - `data/processed/val/` — 검증용 이미지 + YOLO 라벨 (약 1,100개)
 - `data/processed/dataset.yaml` — YOLO 학습 설정 파일
 
+## 모델 학습 및 추론
+
+YOLOv8 모델을 fine-tuning하고 추론 테스트를 진행한다.
+
+### 1. 모델 학습 (fine-tuning)
+
+```bash
+python scripts/train_yolo.py
+```
+
+- 사전학습 모델: `yolov8n.pt` (자동 다운로드)
+- 에폭: 50, 이미지 크기: 640, 배치: 16
+- 학습 시간: 약 30분~1시간 (NVIDIA RTX 4060 Ti 기준)
+- 결과 위치:
+  - `runs/detect/train/` — 학습 로그, 그래프, 예측 샘플
+  - `models/best.pt` — 학습된 모델 가중치 (재사용용)
+
+### 2. 추론 테스트
+
+```bash
+python scripts/predict_yolo.py
+```
+
+- 검증셋(val) 이미지 10장을 랜덤하게 추론
+- 결과 이미지를 `runs/predict/` 폴더에 저장
+- 검출된 번호판에 초록색 박스 + 신뢰도 표시
+
 ## 테스트 실행
 
 각 모듈의 단위 테스트를 실행한다.
@@ -105,6 +132,9 @@ pytest
 ```bash
 # AI Hub → YOLO 변환 함수
 pytest tests/test_convert.py -v
+
+# YOLO 번호판 검출기 (models/best.pt 필요, 없으면 자동 skip)
+pytest tests/test_detector.py -v
 
 # 웹캠 동작 확인 (수동 종료 필요: Q 또는 ESC)
 python tests/test_webcam.py
