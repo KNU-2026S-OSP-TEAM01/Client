@@ -38,6 +38,13 @@ desktop.ini
 *.log
 logs/
 
-# Datasets (큰 데이터셋은 git에 올리지 않음)
-datasets/
-data/raw/
+# 데이터셋 (README만 추적, 나머지는 무시)
+data/*
+!data/README.md
+
+# 모델 파일 (README만 추적, 가중치는 무시)
+models/*
+!models/README.md
+
+# 실제 설정 파일 (예시 파일만 추적)
+config/client.yaml
