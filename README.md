@@ -85,6 +85,42 @@ python tests/test_webcam.py
 
 웹캠 화면이 뜨면 정상. `Q` 또는 `ESC`로 종료.
 
+## 실행 방법
+
+전체 클라이언트를 실행한다. 카메라 → 번호판 인식 → 중복 차단 → 서버 송신 흐름이 자동으로 동작한다.
+
+### 사전 준비
+
+1. `config/client.yaml` 작성 (위의 "5. 설정 파일 작성" 참고)
+2. `models/best.pt` 존재 (모델 학습 섹션 참고)
+3. 카메라 연결 (PC 웹캠 또는 외장 카메라)
+4. Parking Lot Server 동작 중 (백엔드 팀에게 확인)
+
+### 실행
+
+```bash
+python main.py
+```
+
+실행 시 콘솔 출력 예시:
+
+```
+[12:00:00] 설정 로드 완료: config/client.yaml
+[12:00:01] 번호판 인식기 초기화 중...
+[12:00:05] 초기화 완료. 서버 주소: http://192.168.0.10:8000
+[12:00:05] 카메라 시작 (device_id=0)
+[12:00:05] 종료하려면 'q' 또는 ESC 키를 누르세요.
+[12:00:08] 인식: 12가3456 (신뢰도 0.87)
+[12:00:08]   → 서버 응답: entry @ 2026-05-22T12:00:08+09:00
+[12:00:12] 인식: 12가3456 (신뢰도 0.85)
+[12:00:12]   → 중복 차단 (cooldown 안)
+```
+
+### 종료 방법
+
+- `q` 또는 `ESC` 키: 정상 종료 (카메라 자원 정리)
+- `Ctrl+C`: 강제 종료
+
 ## 데이터셋 준비
 
 번호판 검출 모델 학습용 데이터셋을 YOLO 형식으로 변환한다.
@@ -201,10 +237,19 @@ python tests/test_webcam.py
 
 ```
 Client/
+├── main.py            # 통합 실행 스크립트 (카메라 → 인식 → 송신)
 ├── src/
-│   └── client/        # 클라이언트 메인 코드
+│   └── client/        # 클라이언트 메인 모듈
+│       ├── config.py        # 설정 파일 로더
+│       ├── detector.py      # YOLO 번호판 검출
+│       ├── ocr.py           # EasyOCR 한국어 OCR
+│       ├── recognizer.py    # Detector + OCR 통합
+│       ├── deduplicator.py  # 중복 인식 방지
+│       ├── sender.py        # 서버 송신
+│       └── models.py        # 데이터 클래스
+├── config/            # 설정 파일 (client.yaml은 gitignore)
 ├── scripts/           # 데이터 전처리 / 학습 스크립트
-├── tests/             # 테스트 스크립트
+├── tests/             # 단위 테스트
 ├── data/              # 데이터셋 (gitignore, README만 추적)
 ├── models/            # 학습된 모델 가중치 (gitignore)
 ├── requirements.txt   # 의존성 목록
