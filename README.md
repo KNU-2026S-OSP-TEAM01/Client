@@ -58,7 +58,26 @@ pip install torch torchvision torchaudio
 pip install -r requirements.txt
 ```
 
-### 5. 동작 확인
+### 5. 설정 파일 작성
+
+`config/client.example.yaml`을 `config/client.yaml`로 복사하고 환경에 맞게 값 수정한다.
+
+**Windows (PowerShell):**
+
+```powershell
+Copy-Item config\client.example.yaml config\client.yaml
+```
+
+**macOS / Linux:**
+
+```bash
+cp config/client.example.yaml config/client.yaml
+```
+
+`config/client.yaml`에서 `server.url`, `server.api_key` 등을 실제 값으로 수정한다.
+(이 파일은 `.gitignore`에 등록되어 있어 api_key 등 비밀 정보가 외부에 노출되지 않는다.)
+
+### 6. 동작 확인
 
 ```bash
 python tests/test_webcam.py
@@ -165,9 +184,13 @@ pytest tests/test_detector.py -v
 # OCR 정규식 + 텍스트 정리 함수
 pytest tests/test_ocr.py -v
 
+# 설정 파일 로더
+pytest tests/test_config.py -v
+
 # 웹캠 동작 확인 (수동 종료 필요: Q 또는 ESC)
 python tests/test_webcam.py
 ```
+
 ## 프로젝트 구조
 
 ```
