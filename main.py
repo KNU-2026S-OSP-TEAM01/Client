@@ -62,7 +62,7 @@ def handle_result(plate_result, deduplicator, sender):
     - 서버 송신
     - 응답 로그
     """
-    plate = plate_result.text
+    plate = plate_result.plate_number
     confidence = plate_result.confidence
 
     log("인식: " + plate + " (신뢰도 " + "{:.2f}".format(confidence) + ")")

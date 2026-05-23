@@ -80,7 +80,7 @@ cp config/client.example.yaml config/client.yaml
 ### 6. 동작 확인
 
 ```bash
-python tests/test_webcam.py
+python tests/manual_check_webcam.py
 ```
 
 웹캠 화면이 뜨면 정상. `Q` 또는 `ESC`로 종료.
@@ -230,7 +230,7 @@ pytest tests/test_deduplicator.py -v
 pytest tests/test_sender.py -v
 
 # 웹캠 동작 확인 (수동 종료 필요: Q 또는 ESC)
-python tests/test_webcam.py
+python tests/manual_check_webcam.py
 ```
 
 ## 프로젝트 구조

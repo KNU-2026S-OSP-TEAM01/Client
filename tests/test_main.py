@@ -11,6 +11,7 @@ mock을 사용해서 외부 의존성 없이 분기 로직을 검증한다.
 """
 import os
 import sys
+from datetime import datetime
 
 import pytest
 
@@ -52,9 +53,10 @@ class FakeSender:
 def make_plate_result(text="12가3456", confidence=0.87):
     """테스트용 PlateResult 생성."""
     return PlateResult(
-        text=text,
+        plate_number=text,
         confidence=confidence,
         bbox=(100, 100, 200, 200),
+        timestamp=datetime(2026, 5, 22, 12, 0, 0),
     )
 
 
