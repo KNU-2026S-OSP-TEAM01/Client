@@ -125,23 +125,28 @@ def main():
 
     # 4. 카메라 열기
     cap = open_camera(config.camera.device_id)
+    cap.set(cv2.CAP_PROP_FRAME_WIDTH, 640)   # 추가
+    cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 480)  # 추가
     log("카메라 시작 (device_id=" + str(config.camera.device_id) + ")")
     log("종료하려면 'q' 또는 ESC 키를 누르세요.")
 
     # 5. 메인 루프
     try:
+        frame_count = 0          # 추가
         while True:
             ret, frame = cap.read()
             if not ret:
                 log("프레임을 읽을 수 없습니다.")
                 break
 
-            # 번호판 인식
-            results = recognizer.recognize(frame)
-
-            # 각 결과 처리
-            for result in results:
-                handle_result(result, deduplicator, sender)
+            frame_count += 1     # 추가
+            if frame_count % 5 == 0:      # 추가
+                # 번호판 인식
+                results = recognizer.recognize(frame)
+    
+                # 각 결과 처리
+                for result in results:
+                    handle_result(result, deduplicator, sender)
 
             # 화면 표시 (확인용)
             cv2.imshow("OpenPark Client", frame)
