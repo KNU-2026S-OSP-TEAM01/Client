@@ -35,6 +35,7 @@ class PlateDetector:
             frame,
             conf=self.conf_threshold,
             verbose=False,   # 추론 로그 끄기
+            imgsz = 320,
         )
 
         detections = []
