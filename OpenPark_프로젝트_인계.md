@@ -537,3 +537,49 @@ Claude Desktop에서 이어 작업할 때 참고할 사용자 선호:
 도메인 갭 검증부터 시작하자. 
 PC에서 정적 사진으로 YOLO 검출 테스트하는 방법 안내해줘.
 ```
+
+---
+
+## 11. 6/6 작업 일지 — 도메인 갭 해결 및 풀 파이프라인 검증
+
+### 11.1 도메인 갭 검증
+
+휴대폰 차량 사진 8장으로 best.pt 성능 측정:
+- 원본 추론: 0/8 (false positive 2건)
+- cv2.resize(640,640) 패치: 0/8 진짜 검출
+- 2단계 파이프라인 (general YOLOv8 → best.pt): 차량 8/8, 번호판 0/8
+- 결론: 모델 자체 도메인 갭 → 재학습 필수 확정
+
+### 11.2 재학습
+
+- 데이터: 휴대폰 사진 46장 수집 → makesense.ai 라벨링 → 40장 라벨 + 6장 제외
+- 분할: 32 train / 8 val (data/processed_new/)
+- 방법: Transfer learning from models/best.pt, YOLOv8n, 57 epoch (early stop)
+- 결과: val mAP50 0.885, Precision 1.0, Recall 0.793
+- 새 모델: models/best.pt (기존은 models/best_aihub_old.pt 백업)
+- 스크립트: scripts/finetune_yolo.py
+
+### 11.3 풀 파이프라인 검증
+
+- USB 웹캠 device_id=0
+- 운영 백엔드: https://parkinglot-api.mojan.kr
+- 흐름: 웹캠 → YOLO → OCR → Deduplicator → Sender → entry/exit
+- 결과: 실시간 인식 (신뢰도 0.57~1.00), entry 송신 OK
+- 한계: EasyOCR 두/드 같은 비슷한 글자 가끔 오인식
+
+### 11.4 새 config 권장값
+
+camera.device_id: 0
+model.conf_threshold: 0.25 (0.5에서 낮춤)
+ocr.min_confidence: 0.4
+
+### 11.5 보안
+
+운영 api_key 평문 노출됨. 박수겸에게 재발급 요청 필요.
+
+### 11.6 다음 작업
+
+- [ ] 새 best.pt → GitHub Release v0.2.0-finetuned 배포
+- [ ] OCR 오탐 개선
+- [ ] 라파 환경에서 같은 파이프라인 검증 (김태이님)
+- [ ] develop → main 머지
