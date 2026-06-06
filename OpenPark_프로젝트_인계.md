@@ -500,6 +500,11 @@ Claude Desktop에서 이어 작업할 때 참고할 사용자 선호:
 - 발표용 정리 문서 (이전 대화에서 생성): `Week2_Client_검증_결과_정리.md`
 
 ---
+## 알려진 이슈 (미해결)
+
+- `tests/test_convert.py` Line 13: `convert_aihub_to_yolo` import 미해결 (Pylance reportMissingImports)
+  - 원인 미확인 (모듈 경로 문제 or 모듈 자체 미구현 둘 중 하나)
+  - 다음 작업 시 우선 확인 필요
 
 ## 9. GitHub 링크 모음
 
@@ -512,6 +517,10 @@ Claude Desktop에서 이어 작업할 때 참고할 사용자 선호:
 - v0.1.0-week2-model Release: https://github.com/KNU-2026S-OSP-TEAM01/Client/releases/tag/v0.1.0-week2-model
 
 ---
+## 브랜치 정책
+- 작업 브랜치는 항상 develop 기준에서 분기
+- PR target은 develop (main 직접 금지)
+- develop → main 머지는 사람이 수동으로 진행
 
 ## 10. Claude Desktop에서 시작할 때 첫 명령어
 
@@ -519,6 +528,7 @@ Claude Desktop에서 이어 작업할 때 참고할 사용자 선호:
 이 문서 (OpenPark_프로젝트_인계.md) 보고 컨텍스트 잡았으면, 
 먼저 이슈 #28, #29 본문 확인부터 도와줘. 
 그 다음 6/5 미팅 안건 정리하자.
+알려진 이슈해결하기
 ```
 
 또는:
