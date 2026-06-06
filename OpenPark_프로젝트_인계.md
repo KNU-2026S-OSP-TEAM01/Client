@@ -500,11 +500,11 @@ Claude Desktop에서 이어 작업할 때 참고할 사용자 선호:
 - 발표용 정리 문서 (이전 대화에서 생성): `Week2_Client_검증_결과_정리.md`
 
 ---
-## 알려진 이슈 (미해결)
+## 알려진 이슈 (해결)
 
-- `tests/test_convert.py` Line 13: `convert_aihub_to_yolo` import 미해결 (Pylance reportMissingImports)
-  - 원인 미확인 (모듈 경로 문제 or 모듈 자체 미구현 둘 중 하나)
-  - 다음 작업 시 우선 확인 필요
+- ~~`tests/test_convert.py` Line 13: `convert_aihub_to_yolo` import 미해결 (Pylance reportMissingImports)~~
+  - 원인: `sys.path.insert` 런타임 주입을 Pylance 정적 분석기가 추적 못함 (모듈 자체는 정상 존재)
+  - 해결: `pyrightconfig.json`에 `extraPaths: ["scripts"]` 추가
 
 ## 9. GitHub 링크 모음
 
