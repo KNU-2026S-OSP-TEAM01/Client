@@ -1,19 +1,9 @@
 """
 OpenPark Client 통합 실행 스크립트.
 
-카메라 → 번호판 인식 → 중복 차단 → 서버 송신 흐름을 실행한다.
+카메라 → 번호판 인식 → 안정화 버퍼 → 중복 차단 → 서버 송신 흐름을 실행한다.
 
-실행 방법:
-    python main.py
-
-사전 준비:
-    1. config/client.yaml 작성 (client.example.yaml 참고)
-    2. models/best.pt 존재 (학습된 YOLOv8 모델)
-    3. 카메라 연결 (PC 웹캠 또는 외장 카메라)
-
-종료:
-    'q' 또는 ESC: 정상 종료
-    Ctrl+C: 강제 종료
+종료: 'q' 또는 ESC: 정상 종료 / Ctrl+C: 강제 종료
 """
 import os
 import sys
@@ -25,6 +15,7 @@ from src.client.config import load_config
 from src.client.recognizer import PlateRecognizer
 from src.client.deduplicator import Deduplicator
 from src.client.sender import PlateSender
+from src.client.buffer import RecognitionBuffer
 from src.client.models import ServerResponse, ServerError
 
 
@@ -55,27 +46,14 @@ def open_camera(device_id):
     return cap
 
 
-def handle_result(plate_result, deduplicator, sender):
-    """
-    한 개의 인식 결과를 처리한다.
-    - 중복 차단 확인
-    - 서버 송신
-    - 응답 로그
-    """
-    plate = plate_result.plate_number
-    confidence = plate_result.confidence
-
-    log("인식: " + plate + " (신뢰도 " + "{:.2f}".format(confidence) + ")")
-
-    # 중복 차단 확인
+def send_plate(plate, deduplicator, sender):
+    """안정된 번호판 문자열을 받아 중복 차단 후 송신 + 응답 로그."""
     if not deduplicator.should_send(plate):
         log("  → 중복 차단 (cooldown 안)")
         return
 
-    # 서버 송신
     response = sender.send(plate)
 
-    # 응답 로그
     if isinstance(response, ServerResponse):
         if response.event == "entry":
             log("  → 서버 응답: entry @ " + str(response.entered_at))
@@ -90,8 +68,15 @@ def handle_result(plate_result, deduplicator, sender):
             log("    메시지: " + response.message)
 
 
+def handle_result(plate_result, deduplicator, sender):
+    """단일 PlateResult를 직접 처리 (기존 호환성 유지)."""
+    plate = plate_result.plate_number
+    confidence = plate_result.confidence
+    log("인식: " + plate + " (신뢰도 " + "{:.2f}".format(confidence) + ")")
+    send_plate(plate, deduplicator, sender)
+
+
 def main():
-    # 1. 설정 로드
     if not os.path.exists(CONFIG_PATH):
         print("ERROR: 설정 파일이 없습니다: " + CONFIG_PATH)
         print("       'config/client.example.yaml'을 복사해서 사용하세요.")
@@ -100,10 +85,8 @@ def main():
     config = load_config(CONFIG_PATH)
     log("설정 로드 완료: " + CONFIG_PATH)
 
-    # 2. 파일 확인
     check_files(config)
 
-    # 3. 모듈 초기화
     log("번호판 인식기 초기화 중...")
     recognizer = PlateRecognizer(
         model_path=config.model.path,
@@ -121,14 +104,25 @@ def main():
         timeout_seconds=config.server.timeout_seconds,
     )
 
-    log("초기화 완료. 서버 주소: " + config.server.url)
+    buffer = RecognitionBuffer(
+        window_size=config.buffer.window_size,
+        min_count=config.buffer.min_count,
+        min_avg_conf=config.buffer.min_avg_conf,
+        similarity_threshold=config.buffer.similarity_threshold,
+        suppress_seconds=config.deduplicator.cooldown_seconds,
+    )
 
-    # 4. 카메라 열기
+    log("초기화 완료. 서버 주소: " + config.server.url)
+    log("버퍼 설정: window=" + str(config.buffer.window_size) +
+        ", min_count=" + str(config.buffer.min_count) +
+        ", min_avg_conf=" + str(config.buffer.min_avg_conf) +
+        ", similarity=" + str(config.buffer.similarity_threshold) +
+        ", suppress=" + str(config.deduplicator.cooldown_seconds) + "s")
+
     cap = open_camera(config.camera.device_id)
     log("카메라 시작 (device_id=" + str(config.camera.device_id) + ")")
     log("종료하려면 'q' 또는 ESC 키를 누르세요.")
 
-    # 5. 메인 루프
     try:
         while True:
             ret, frame = cap.read()
@@ -136,19 +130,23 @@ def main():
                 log("프레임을 읽을 수 없습니다.")
                 break
 
-            # 번호판 인식
             results = recognizer.recognize(frame)
 
-            # 각 결과 처리
+            # 각 검출 결과를 버퍼에 누적
             for result in results:
-                handle_result(result, deduplicator, sender)
+                buffer.add(result.plate_number, result.confidence)
 
-            # 화면 표시 (확인용)
+            # 안정된 다수결 결과만 송신
+            consensus = buffer.get_consensus()
+            if consensus is not None:
+                log("안정된 인식: " + consensus)
+                send_plate(consensus, deduplicator, sender)
+                buffer.mark_sent(consensus)
+
             cv2.imshow("OpenPark Client", frame)
 
-            # 종료 키 확인 (q 또는 ESC)
             key = cv2.waitKey(1) & 0xFF
-            if key == ord("q") or key == 27:  # 27 = ESC
+            if key == ord("q") or key == 27:
                 log("종료 키 입력. 정리 중...")
                 break
 
@@ -156,7 +154,6 @@ def main():
         log("Ctrl+C 입력. 정리 중...")
 
     finally:
-        # 자원 정리
         cap.release()
         cv2.destroyAllWindows()
         log("종료 완료.")

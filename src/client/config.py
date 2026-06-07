@@ -3,7 +3,7 @@
 환경별로 달라지는 값(api_key, server_url, 카메라 ID 등)을
 YAML 파일로 분리하여 관리한다.
 """
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 
 import yaml
 
@@ -43,6 +43,15 @@ class DeduplicatorConfig:
 
 
 @dataclass
+class BufferConfig:
+    """OCR 결과 안정화 버퍼 설정"""
+    window_size: int = 10
+    min_count: int = 5
+    min_avg_conf: float = 0.7
+    similarity_threshold: int = 1
+
+
+@dataclass
 class ClientConfig:
     """전체 Client 설정"""
     server: ServerConfig
@@ -50,48 +59,36 @@ class ClientConfig:
     model: ModelConfig
     ocr: OCRConfig
     deduplicator: DeduplicatorConfig
+    buffer: BufferConfig = field(default_factory=BufferConfig)
 
 
 def load_config(config_path):
     """
     YAML 설정 파일을 읽어서 ClientConfig 객체로 반환한다.
-
-    Args:
-        config_path: 설정 파일 경로 (예: 'config/client.yaml')
-
-    Returns:
-        ClientConfig 객체
-
-    Raises:
-        FileNotFoundError: 설정 파일이 없을 때
-        ValueError: 필수 키가 누락됐을 때
     """
-    # 파일 읽기
     with open(config_path, "r", encoding="utf-8") as f:
         data = yaml.safe_load(f)
 
     if data is None:
         raise ValueError(f"설정 파일이 비어있습니다: {config_path}")
 
-    # 필수 섹션 검증
     required_sections = ["server", "camera", "model", "ocr", "deduplicator"]
     for section in required_sections:
         if section not in data:
             raise ValueError(f"필수 설정 섹션이 없습니다: '{section}'")
 
-    # server 검증
     server_data = data["server"]
     if "url" not in server_data:
         raise ValueError("server.url 설정이 없습니다")
     if "api_key" not in server_data:
         raise ValueError("server.api_key 설정이 없습니다")
 
-    # model 검증
     model_data = data["model"]
     if "path" not in model_data:
         raise ValueError("model.path 설정이 없습니다")
 
-    # 객체 생성
+    buffer_data = data.get("buffer", {}) or {}
+
     return ClientConfig(
         server=ServerConfig(
             url=server_data["url"],
@@ -111,5 +108,11 @@ def load_config(config_path):
         ),
         deduplicator=DeduplicatorConfig(
             cooldown_seconds=data["deduplicator"].get("cooldown_seconds", 30),
+        ),
+        buffer=BufferConfig(
+            window_size=buffer_data.get("window_size", 10),
+            min_count=buffer_data.get("min_count", 5),
+            min_avg_conf=buffer_data.get("min_avg_conf", 0.7),
+            similarity_threshold=buffer_data.get("similarity_threshold", 1),
         ),
     )
